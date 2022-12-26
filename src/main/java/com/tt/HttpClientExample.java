@@ -15,60 +15,8 @@ public class HttpClientExample {
     protected String FARM_TAG = "farm";
     protected String DEVICE_TAG = "device";
     protected String SENSOR_TAG = "sensor";
-    protected MediaType MEDIA_TYPE_TEXT = MediaType.parse("text/plain");
-    protected static final String LINE_SEPARATOR = System.getProperty("line.separator");
+
     private long timestamp = 1614735960L;
-
-    protected static final OkHttpClient OK_HTTP_CLIENT = new OkHttpClient().newBuilder()
-        .readTimeout(500000, TimeUnit.MILLISECONDS)
-        .connectTimeout(500000, TimeUnit.MILLISECONDS)
-        .writeTimeout(500000, TimeUnit.MILLISECONDS)
-        .build();
-
-    private static OkHttpClient getOkHttpClient() {
-        return OK_HTTP_CLIENT;
-    }
-
-    private Pair exeOkHttpRequest(Request request) {
-        Response response = null;
-        OkHttpClient client = getOkHttpClient();
-        try {
-            response = client.newCall(request).execute();
-            int code = response.code();
-            String body = response.body().string();
-
-            if (!response.isSuccessful()) {
-                System.out.println("Fail with code " + code);
-            } else {
-                System.out.println("Succeed with code " + code);
-            }
-            //System.out.println(body);
-
-            return new Pair(code, body);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return new Pair(500, e.getMessage());
-        } finally {
-            if (response != null) {
-                response.close();
-            }
-        }
-    }
-
-    private Pair execPost(String reqURL, String query) {
-        Request request = new Request.Builder()
-            .url(reqURL)
-            .post(RequestBody.create(query, MEDIA_TYPE_TEXT))
-            .build();
-        return exeOkHttpRequest(request);
-    }
-
-    private Pair execGet(String reqURLWithParameters) {
-        Request request = new Request.Builder()
-            .url(reqURLWithParameters)
-            .build();
-        return exeOkHttpRequest(request);
-    }
 
     private void initConnect(String ip, String port) {
         writeURL = "http://" + ip + ":" + port + "" + writeURL;
@@ -94,7 +42,7 @@ public class HttpClientExample {
 
         System.out.println("To insert:");
         System.out.println(putReqSB.toString());
-        return execPost(writeURL, putReqSB.toString()).code;
+        return HttpClient.execPost(writeURL, putReqSB.toString()).code;
     }
 
     /**
@@ -118,10 +66,10 @@ public class HttpClientExample {
             ja.add(pointMap);
         }
 
-        return execPost(writeURL, ja.toJSONString()).code;
+        return HttpClient.execPost(writeURL, ja.toJSONString()).code;
     }
 
-    public Pair queryInJson(long start, long end) {
+    public HttpClient.Pair queryInJson(long start, long end) {
         JSONObject jo = new JSONObject();
 
         jo.put("start", start);
@@ -149,7 +97,7 @@ public class HttpClientExample {
         System.out.println("To query json:");
         System.out.println(json);
 
-        return execPost(queryURL, json);
+        return HttpClient.execPost(queryURL, json);
     }
 
     /**
@@ -158,7 +106,7 @@ public class HttpClientExample {
      * @param end
      * @return
      */
-    public Pair queryByGet(long start, long end) {
+    public HttpClient.Pair queryByGet(long start, long end) {
         HttpUrl.Builder urlBuilder = HttpUrl.parse(queryURL).newBuilder();
         urlBuilder.addQueryParameter("start", Long.toString(start));
         urlBuilder.addQueryParameter("end", Long.toString(end));
@@ -187,17 +135,7 @@ public class HttpClientExample {
 
         System.out.println("To query GET Url=\'"+url+"\'");
 
-        return execGet(url);
-    }
-
-    class Pair {
-        int code;
-        String msg;
-
-        Pair(int code, String msg) {
-            this.code = code;
-            this.msg = msg;
-        }
+        return HttpClient.execGet(url);
     }
 
     public static void main(String[] args) {
@@ -213,7 +151,7 @@ public class HttpClientExample {
 	    // You need to change TickTock config, http.request.format=json
         // a.insertJsonData();
 
-        Pair resp = a.queryInJson(a.timestamp, 1614739000L);
+        HttpClient.Pair resp = a.queryInJson(a.timestamp, 1614739000L);
         System.out.println("QueryInJson Return code:"+resp.code);
         System.out.println("QueryInJson Return msg:"+resp.msg);
 
