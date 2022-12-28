@@ -10,7 +10,7 @@ import java.util.concurrent.TimeUnit;
 
 public class HttpClient {
     protected static MediaType MEDIA_TYPE_TEXT = MediaType.parse("text/plain");
-    protected static final String LINE_SEPARATOR = System.getProperty("line.separator");
+    protected static MediaType MEDIA_TYPE_JSON = MediaType.parse("application/json");
 
     protected static final OkHttpClient OK_HTTP_CLIENT = new OkHttpClient().newBuilder()
         .readTimeout(500000, TimeUnit.MILLISECONDS)
@@ -22,7 +22,7 @@ public class HttpClient {
         return OK_HTTP_CLIENT;
     }
 
-    private static Pair exeOkHttpRequest(Request request) {
+    private static Pair exeOkHttpRequest(Request request) throws HttpException {
         Response response = null;
         OkHttpClient client = getOkHttpClient();
         try {
@@ -40,7 +40,7 @@ public class HttpClient {
             return new Pair(code, body);
         } catch (Exception e) {
             e.printStackTrace();
-            return new Pair(500, e.getMessage());
+            throw new HttpException(e.getMessage());
         } finally {
             if (response != null) {
                 response.close();
@@ -48,7 +48,7 @@ public class HttpClient {
         }
     }
 
-    public static Pair execPost(String reqURL, String query) {
+    public static Pair execPost(String reqURL, String query) throws HttpException{
         Request request = new Request.Builder()
             .url(reqURL)
             .post(RequestBody.create(query, MEDIA_TYPE_TEXT))
@@ -56,8 +56,16 @@ public class HttpClient {
         return exeOkHttpRequest(request);
     }
 
-    public static Pair execGet(String reqURLWithParameters) {
+    public static Pair execGet(String reqURLWithParameters) throws HttpException{
         Request request = new Request.Builder()
+            .url(reqURLWithParameters)
+            .build();
+        return exeOkHttpRequest(request);
+    }
+
+    public static Pair execGet(String reqURLWithParameters, String token) throws HttpException{
+        Request request = new Request.Builder()
+            .header("Authorization", token)
             .url(reqURLWithParameters)
             .build();
         return exeOkHttpRequest(request);
@@ -70,6 +78,12 @@ public class HttpClient {
         Pair(int code, String msg) {
             this.code = code;
             this.msg = msg;
+        }
+    }
+
+    static class HttpException extends Exception {
+        public HttpException(String msg) {
+            super(msg);
         }
     }
 }

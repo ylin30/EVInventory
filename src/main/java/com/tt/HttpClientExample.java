@@ -26,7 +26,7 @@ public class HttpClientExample {
     /**
      * insert data point in plain format (default and recommended)
      */
-    private int insertPlainData() {
+    private int insertPlainData() throws HttpClient.HttpException {
         StringBuilder putReqSB = new StringBuilder();
 
         int numDataPoints = 2;
@@ -48,7 +48,7 @@ public class HttpClientExample {
     /**
      * Insert data point in Json format
      */
-    private int insertJsonData() {
+    private int insertJsonData() throws HttpClient.HttpException {
         // putting data to JSONObject
         JSONArray ja = new JSONArray();
 
@@ -69,7 +69,7 @@ public class HttpClientExample {
         return HttpClient.execPost(writeURL, ja.toJSONString()).code;
     }
 
-    public HttpClient.Pair queryInJson(long start, long end) {
+    public HttpClient.Pair queryInJson(long start, long end) throws HttpClient.HttpException {
         JSONObject jo = new JSONObject();
 
         jo.put("start", start);
@@ -106,7 +106,7 @@ public class HttpClientExample {
      * @param end
      * @return
      */
-    public HttpClient.Pair queryByGet(long start, long end) {
+    public HttpClient.Pair queryByGet(long start, long end) throws HttpClient.HttpException {
         HttpUrl.Builder urlBuilder = HttpUrl.parse(queryURL).newBuilder();
         urlBuilder.addQueryParameter("start", Long.toString(start));
         urlBuilder.addQueryParameter("end", Long.toString(end));
@@ -138,7 +138,7 @@ public class HttpClientExample {
         return HttpClient.execGet(url);
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws HttpClient.HttpException {
         // Usgae: java HttpClientExample <host> <port>
         HttpClientExample a=new HttpClientExample();
         String host=args[0];
