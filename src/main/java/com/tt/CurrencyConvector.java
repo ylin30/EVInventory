@@ -9,7 +9,15 @@ import java.util.Map;
 
 public class CurrencyConvector {
     private Map<String, Double> currencyCodeToUSD = new HashMap<>();
+    public String token;
+
+    public CurrencyConvector(String token) {
+        this.token = token;
+    }
     public long toUSD(long price, String currencyCode) throws HttpClient.HttpException, ParseException {
+        if (currencyCode.equalsIgnoreCase("USD")) {
+            return price;
+        }
         if (!currencyCodeToUSD.containsKey(currencyCode)) {
             int i=0, maxRetries = 10;
             while (i < maxRetries) {
@@ -31,7 +39,7 @@ public class CurrencyConvector {
     }
 
     /**
-     * curl -v -H "Authorization: Basic bG9kZXN0YXI6eWZtTlB1U0RMbDVzZ0o0NFZKNThWNGpudWRjdmh1N3I=" 'https://www.xe.com/api/protected/statistics/?from=EUR&to=USD'
+     * curl -v -H "Authorization: xxxxx" 'https://www.xe.com/api/protected/statistics/?from=EUR&to=USD'
      * @param currencyCode
      * @return
      * @throws HttpClient.HttpException
@@ -40,7 +48,7 @@ public class CurrencyConvector {
     public double queryRate(String currencyCode) throws HttpClient.HttpException, ParseException {
         // Query XE.com
         String url = "https://www.xe.com/api/protected/statistics/?from="+currencyCode+"&to=USD";
-        HttpClient.Pair res = HttpClient.execGet(url, "Basic bG9kZXN0YXI6eWZtTlB1U0RMbDVzZ0o0NFZKNThWNGpudWRjdmh1N3I=");
+        HttpClient.Pair res = HttpClient.execGet(url, token);
 
         // Parse the result.
         return parse(res.msg);
@@ -60,8 +68,9 @@ public class CurrencyConvector {
 
     public static void main(String[] args) {
         String currencyCode = args[0].toUpperCase();
+        String token = args[1];
 
-        CurrencyConvector convector = new CurrencyConvector();
+        CurrencyConvector convector = new CurrencyConvector(token);
         try {
             double rate = convector.queryRate(currencyCode);
             System.out.println("Rate:" + rate);
