@@ -51,7 +51,12 @@ public class CurrencyConvector {
         HttpClient.Pair res = HttpClient.execGet(url, token);
 
         // Parse the result.
-        return parse(res.msg);
+        try {
+            return parse(res.msg);
+        } catch (ParseException e) {
+            System.out.println("Fail to parse queryRate msg:" + res.msg);
+            throw e;
+        }
     }
 
     public double parse(String jsonStr) throws ParseException {
