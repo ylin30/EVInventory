@@ -19,7 +19,9 @@ import java.util.Set;
 import static java.lang.Thread.sleep;
 
 public class TeslaInventoryGrepper {
-    private static String url="https://www.tesla.com/inventory/api/v1/inventory-results";
+    private String url = urlCom;
+    public static String urlCom="https://www.tesla.com/inventory/api/v1/inventory-results";
+    public static String urlCn="https://www.tesla.cn/inventory/api/v1/inventory-results";
 
     public static String TOTAL_NUMBER_METRIC = "car_number";
     public static String PRICE_USD_METRIC = "price_USD";
@@ -59,10 +61,15 @@ public class TeslaInventoryGrepper {
     public static Map<String, String> countriesExcludingEU = new HashMap<>(20);
     static {
         countriesExcludingEU.put("US", "USA");
+        countriesExcludingEU.put("CN", "China");
     }
 
     private Set<String> carVINs;
     public TeslaInventoryGrepper() {
+        this.carVINs = new HashSet<>();
+    }
+    public TeslaInventoryGrepper(String url) {
+        this.url = url;
         this.carVINs = new HashSet<>();
     }
 
@@ -112,6 +119,8 @@ public class TeslaInventoryGrepper {
             country.equalsIgnoreCase("GB") ||
             country.equalsIgnoreCase("US")) { // Canada, Ireland, England
             return "en";
+        } else if (country.equalsIgnoreCase("CN")) { // China
+            return "zh";
         } else {
             return "en";
         }
@@ -173,6 +182,36 @@ public class TeslaInventoryGrepper {
 
     /**
      * For US. Must specify lng, lat, region.
+     *
+     * For EU countries. Only need to specify countryCode
+     *
+     // Example: france, model y, inventory of new vehicle
+     // {
+     // "query":{
+     //  "model":"my",
+     //  "condition":"new",
+     //  "options":{},
+     //  "arrangeby":"Price",
+     //  "order":"asc",
+     //  "market":"FR",
+     //  "language":"fr",
+     //  "super_region":"north america",
+     //  "lng":"",
+     //  "lat":"",
+     //  "zip":"",
+     //  "range":0
+     //  },
+     // "offset":0,
+     // "count":50,
+     // "outsideOffset":0,
+     // "outsideSearch":false
+     // }
+     *
+     * For China cities. Need to specify Option:{"Province", "FleetSalesRegions"}, e.g.,
+     * "options":{"Province":["广东"],"FleetSalesRegions":["Dong Guan 东莞","Fo Shan 佛山","Guang Zhou 广州","Hui Zhou 惠州","Shen Zhen 深圳","Zhong Shan 中山","Zhu Hai 珠海","Jiang Men 江门","Shan Tou 汕头"]}
+     * "options":{"Province":["上海"],"FleetSalesRegions":["Shang Hai 上海"]}
+     *
+     * In fact, we only need to specify Province:["Beijing"]. The query will return all the cars in China.
      * @param model
      * @param condition
      * @param market
@@ -183,7 +222,7 @@ public class TeslaInventoryGrepper {
      * @param offset
      * @return
      */
-    private String buildQueryParams(String model, String condition, String market, String zip, double lng, double lat, String region, int range, int offset) {
+    private String buildQueryParams(String model, String condition, String market, String zip, double lng, double lat, String region, int range, String province, int offset) {
         JSONObject JO = new JSONObject();
 
         // "query":{...}
@@ -198,8 +237,21 @@ public class TeslaInventoryGrepper {
         queryJO.put("lng", lng);
         queryJO.put("lat", lat);
         queryJO.put("zip", zip);
+        if (province !=null && !province.isEmpty()) {
+            // It is for China province. No region and range.
+            JSONArray ja = new JSONArray();
+            ja.add(province);
+            // for address data, first create LinkedHashMap
+            Map prov = new LinkedHashMap(2);
+            prov.put("Province", ja);
+
+            queryJO.put("options", prov);
+        } else {
+            queryJO.put("region", region);
+        }
         queryJO.put("range", range);
-        queryJO.put("region", region);
+
+        // Top level parameters continues...
         JO.put("query", queryJO);
 
         // "offset":0
@@ -226,15 +278,15 @@ public class TeslaInventoryGrepper {
      * @param offset
      * @return
      */
-    public HttpClient.Pair queryByGet(String model, String condition, String market, int offset) throws HttpClient.HttpException {
-        return queryByGet(model, condition, market, "", 0, 0, "", 0, offset);
+    public HttpClient.Pair queryByGet(String model, String condition, String market, String province, int offset) throws HttpClient.HttpException {
+        return queryByGet(model, condition, market, "", 0, 0, "", 0, province, offset);
     }
 
-    public HttpClient.Pair queryByGet(String model, String condition, String market, String zip, double lng, double lat, String region, int range, int offset) throws HttpClient.HttpException {
+    public HttpClient.Pair queryByGet(String model, String condition, String market, String zip, double lng, double lat, String region, int range, String province, int offset) throws HttpClient.HttpException {
         HttpUrl.Builder urlBuilder = HttpUrl.parse(url).newBuilder();
 
         // Just one parameter query={"query":{...}, offset:0,...,outsideSearch:false}
-        String queryJsonStr = buildQueryParams(model, condition, market, zip, lng, lat, region, range, offset);
+        String queryJsonStr = buildQueryParams(model, condition, market, zip, lng, lat, region, range, province, offset);
         urlBuilder.addQueryParameter("query", queryJsonStr);
 
         String url = urlBuilder.build().toString();
@@ -264,7 +316,7 @@ public class TeslaInventoryGrepper {
      * @param market
 =     */
     public int queryOneCountry(List<TeslaCar> cars, String model, String condition, String market) {
-        return queryWithRetries(cars, model, condition, market, "", 0, 0, "", 0);
+        return queryWithRetries(cars, model, condition, market, "", 0, 0, "", 0, null);
     }
 
     /**
@@ -282,14 +334,14 @@ public class TeslaInventoryGrepper {
      * @param range
      * @return
      */
-    public int queryWithRetries(List<TeslaCar> cars, String model, String condition, String market, String zip, double lng, double lat, String region, int range) {
+    public int queryWithRetries(List<TeslaCar> cars, String model, String condition, String market, String zip, double lng, double lat, String region, int range, String province) {
         int total_matches_found = 0;
         int offset = 0;
         int maxRetries = 5;
         int i = 0;
         do {
             try {
-                HttpClient.Pair resp = queryByGet(model, condition, market, zip, lng, lat, region, range, offset);
+                HttpClient.Pair resp = queryByGet(model, condition, market, zip, lng, lat, region, range, province, offset);
                 total_matches_found = parse(condition, resp.msg, cars);
             } catch (HttpClient.HttpException he) {
                 System.out.println(String.format("Fail to query %s, %s, %s, %s, %d", model, condition, market, offset));
@@ -323,7 +375,18 @@ public class TeslaInventoryGrepper {
      * @param city
      */
     private int queryOneUSACity(List<TeslaCar> cars, String model, String condition, USACity city) {
-        return queryWithRetries(cars, model, condition, "US", city.zip, city.lng, city.lat, city.region, USACity.RANGE);
+        return queryWithRetries(cars, model, condition, "US", city.zip, city.lng, city.lat, city.region, USACity.RANGE, null);
+    }
+
+    /**
+     * Query inventory of a China city. Zip, region(state), lng and lat must be speicified.
+     * @param cars
+     * @param model
+     * @param condition
+     * @param province
+     */
+    private int queryOneChinaProvince(List<TeslaCar> cars, String model, String condition, String province) {
+        return queryWithRetries(cars, model, condition, "CN", "", 0, 0, "", 0, province);
     }
 
     public static int parse(String condition, String jsonResult, List<TeslaCar> cars) throws ParseException {
@@ -461,6 +524,64 @@ public class TeslaInventoryGrepper {
         }
     }
 
+    /**
+     * Loop all Chinese cities.
+     * Query all models and all conditions in each Chinese city.
+     */
+    public void grepChina(String XEToken, String writeURL) {
+        CurrencyConvector convector = new CurrencyConvector(XEToken);
+
+        // Some cities might be too closed and their results have overlapped.
+        // Don't count repeated inventory.
+        Set<String> knownVINs = new HashSet<>();
+
+        long currSec = System.currentTimeMillis() / 1000;
+        String market = "CN";
+
+        for (int i = 0; i < models.length; i++) {
+            String model = models[i];
+            for (int j = 0; j < conditions.length; j++) {
+                String condition = conditions[j];
+                List<TeslaCar> cars = new LinkedList<>();
+
+                // Specify "Province":["Beijing"] will be enough to return all cars in China.
+                int totalNumber = queryOneChinaProvince(cars, model, condition, "Beijing");
+                System.out.println(String.format("%s(%s), model:%s, condition:%s, total_matches_found:%d, cars:%d", "China", market, model, condition, totalNumber, cars.size()));
+
+                Map<String, Integer> cityToNum = new HashMap<>();
+                summarizeNum(cars, cityToNum);
+
+                for(Map.Entry<String, Integer> entry : cityToNum.entrySet()) {
+                    String city = entry.getKey();
+                    int num = entry.getValue();
+                    // No matter if zero inventory or not, write total car number to TT.
+                    writeTotalNumberToTT(writeURL, currSec, num, model, condition, "ASIA", "China", market, city);
+                }
+
+                if (cars.size() > 0) {
+                    for (TeslaCar car : cars) {
+                        // convert local price in CNY to USD, and set it in the object.
+                        try {
+                            long priceUSD = convector.toUSD(car.getPrice(), car.getCurrencyCode());
+                            car.setPriceUSD(priceUSD);
+
+                            car.setContinent("ASIA");
+                        } catch (Exception e) {
+                            System.out.println("Fail to convert price to USD for car " + car);
+                            e.printStackTrace();
+                        }
+                    }
+                    writeMetricsToTT(cars, writeURL, currSec);
+                }
+                try {
+                    sleep(1000);
+                } catch (InterruptedException ie) {
+                    ie.printStackTrace();
+                }
+            }
+        }
+    }
+
     private int removeRedundantCars(List<TeslaCar> cars, Set<String> knownVINs) {
         //System.out.println(Arrays.toString(knownVINs.toArray()));
         int numRemoved = 0;
@@ -476,6 +597,24 @@ public class TeslaInventoryGrepper {
             }
         }
         return numRemoved;
+    }
+
+    /**
+     * Given a list of cars, summarize how many cars in a city.
+     * @param cars
+     * @param cityToNum
+     */
+    private void summarizeNum(List<TeslaCar> cars, Map<String, Integer> cityToNum) {
+        Iterator<TeslaCar> it = cars.iterator();
+        while(it.hasNext()) {
+            TeslaCar car = it.next();
+            if (!cityToNum.containsKey(car.getCity())) {
+                //System.out.println("Car " + car.getVin() + " is in Set. Removed!");
+                cityToNum.put(car.getCity(), 0);
+            }
+            int currNum = cityToNum.get(car.getCity());
+            cityToNum.put(car.getCity(), currNum + 1);
+        }
     }
 
     /**
@@ -566,13 +705,17 @@ public class TeslaInventoryGrepper {
         return putReqSB.toString();
     }
 
+    public void setUrl(String url) {
+        this.url = url;
+    }
+
     public static void main(String[] args) {
-        // Usgae: java TeslaInventoryGrepper <model(m3, my, mx, ms)> <condition(new, used)> <market(fr...)> [zip(98004...)]
+        // Usgae: java TeslaInventoryGrepper <model(m3, my, mx, ms)> <condition(new, used)> <market(fr, cn...)> [Province(上海)]
         HttpClientExample a = new HttpClientExample();
 
         if (args.length < 3 || args.length > 4) {
             System.err.println("Parameters length must be 3 or 4.");
-            System.err.println("Usgae: java TeslaInventoryGrepper <model(m3, my, mx, ms)> <condition(new, used)> <market(fr...)> [zip(98004...)]");
+            System.err.println("Usgae: java TeslaInventoryGrepper <model(m3, my, mx, ms)> <condition(new, used)> <market(fr, cn...)> [Province(Shanghai)]");
             return;
         }
         String model = args[0].toLowerCase();
@@ -590,11 +733,13 @@ public class TeslaInventoryGrepper {
         }
 
         String market = args[2].toUpperCase();
-        String zip = args.length > 3 ? args[4] : "";
+        String province = args.length > 3 ? args[3] : null;
 
-        TeslaInventoryGrepper grepper = new TeslaInventoryGrepper();
+        TeslaInventoryGrepper grepper = new TeslaInventoryGrepper(
+            province!=null ? TeslaInventoryGrepper.urlCn : TeslaInventoryGrepper.urlCom
+        );
         try {
-            HttpClient.Pair resp = grepper.queryByGet(model, condition, market, 0);
+            HttpClient.Pair resp = grepper.queryByGet(model, condition, market, province, 0);
             System.out.println("QueryByGet Return code:" + resp.code);
             System.out.println("QueryByGet Return msg:" + resp.msg);
         } catch(HttpClient.HttpException e) {

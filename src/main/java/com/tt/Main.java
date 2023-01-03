@@ -16,5 +16,8 @@ public class Main {
         grepper.grepEUCountries(XEToken, writeURL);
 
         grepper.grepUSACities(writeURL);
+
+        grepper.setUrl(TeslaInventoryGrepper.urlCn);
+        grepper.grepChina(XEToken, writeURL);
     }
 }
