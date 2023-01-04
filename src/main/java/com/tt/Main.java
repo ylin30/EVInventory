@@ -13,12 +13,14 @@ public class Main {
         String XEToken = args[2];
         String writeURL = "http://" + TThost + ":" + TTHttpPort + "/api/put";
         TeslaInventoryGrepper grepper = new TeslaInventoryGrepper();
-        grepper.grepEUCountries(XEToken, writeURL);
-
+        grepper.grepSmallCountries(XEToken, writeURL);
+/*
         grepper.grepCarsInCities(XEToken, writeURL, "NA", "US", "USA", USACity.cityMap);
         grepper.grepCarsInCities(XEToken, writeURL, "NA", "CA", "Canada", CanadaCity.cityMap);
 
         grepper.setUrl(TeslaInventoryGrepper.urlCn);
         grepper.grepChina(XEToken, writeURL);
+
+ */
     }
 }

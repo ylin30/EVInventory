@@ -75,8 +75,8 @@ public class TeslaCar {
 
             this.countryCode = (String) map.get("CountryCode");
 
-            if (TeslaInventoryGrepper.EUCountries.containsKey(countryCode)) {
-                this.country = TeslaInventoryGrepper.EUCountries.get(countryCode);
+            if (TeslaInventoryGrepper.smallCountries.containsKey(countryCode)) {
+                this.country = TeslaInventoryGrepper.smallCountries.get(countryCode).first;
             } else {
                 this.country = TeslaInventoryGrepper.countriesExcludingEU.get(countryCode);
             }

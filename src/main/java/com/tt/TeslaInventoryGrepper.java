@@ -30,32 +30,47 @@ public class TeslaInventoryGrepper {
     public static String[] models = {"m3", "my", "mx", "ms"};
     public static String[] conditions = {"new", "used"};
 
-    public static Map<String, String> EUCountries = new HashMap<>(24);
+    /**
+     * Small countries can be queried with countryCode, without specifying region/province.
+     * No space allowed in country name
+     */
+    public static Map<String, Pair<String>> smallCountries = new HashMap<>(24);
     static {
-        EUCountries.put("BE", "Belgium");
-        EUCountries.put("CZ", "Czech");
-        EUCountries.put("DE", "Germany");
-        EUCountries.put("DK", "Denmark");
-        EUCountries.put("GR", "Greek");
-        EUCountries.put("ES", "Spain");
-        EUCountries.put("FR", "France");
-        EUCountries.put("HR", "Croatia");
-        EUCountries.put("HU", "Hungary");
-        EUCountries.put("IE", "Ireland");
-        EUCountries.put("IS", "Iceland");
-        EUCountries.put("IT", "Italy");
-        EUCountries.put("LU", "Luxembourg");
-        EUCountries.put("NL", "Netherlands");
-        EUCountries.put("NO", "Norway");
-        EUCountries.put("AT", "Austria");
-        EUCountries.put("PL", "Poland");
-        EUCountries.put("PT", "Portugal");
-        EUCountries.put("RO", "Romania");
-        EUCountries.put("SI", "Slovenia");
-        EUCountries.put("SE", "Sweden");
-        EUCountries.put("CH", "Switzerland");
-        EUCountries.put("FI", "Finland");
-        EUCountries.put("GB", "England");
+        smallCountries.put("BE", new Pair<String>("Belgium", "EU"));
+        smallCountries.put("CZ", new Pair<String>("Czech", "EU"));
+        smallCountries.put("DE", new Pair<String>("Germany", "EU"));
+        smallCountries.put("DK", new Pair<String>("Denmark", "EU"));
+        smallCountries.put("GR", new Pair<String>("Greek", "EU"));
+        smallCountries.put("ES", new Pair<String>("Spain", "EU"));
+        smallCountries.put("FR", new Pair<String>("France", "EU"));
+        smallCountries.put("HR", new Pair<String>("Croatia", "EU"));
+        smallCountries.put("HU", new Pair<String>("Hungary", "EU"));
+        smallCountries.put("IE", new Pair<String>("Ireland", "EU"));
+        smallCountries.put("IS", new Pair<String>("Iceland", "EU"));
+        smallCountries.put("IT", new Pair<String>("Italy", "EU"));
+        smallCountries.put("LU", new Pair<String>("Luxembourg", "EU"));
+        smallCountries.put("NL", new Pair<String>("Netherlands", "EU"));
+        smallCountries.put("NO", new Pair<String>("Norway", "EU"));
+        smallCountries.put("AT", new Pair<String>("Austria", "EU"));
+        smallCountries.put("PL", new Pair<String>("Poland", "EU"));
+        smallCountries.put("PT", new Pair<String>("Portugal", "EU"));
+        smallCountries.put("RO", new Pair<String>("Romania", "EU"));
+        smallCountries.put("SI", new Pair<String>("Slovenia", "EU"));
+        smallCountries.put("SE", new Pair<String>("Sweden", "EU"));
+        smallCountries.put("CH", new Pair<String>("Switzerland", "EU"));
+        smallCountries.put("FI", new Pair<String>("Finland", "EU"));
+        smallCountries.put("GB", new Pair<String>("England", "EU"));
+        smallCountries.put("PR", new Pair<String>("PuertoRico", "NA"));
+        smallCountries.put("MX", new Pair<String>("Mexico", "NA"));
+        smallCountries.put("HK", new Pair<String>("HongKong", "Asia"));
+        smallCountries.put("MO", new Pair<String>("Macau", "Asia"));
+        smallCountries.put("SG", new Pair<String>("Singapore", "Asia"));
+        smallCountries.put("KR", new Pair<String>("SouthKorea", "Asia"));
+        smallCountries.put("JP", new Pair<String>("Japan", "Asia"));
+        smallCountries.put("AE", new Pair<String>("UAE", "MiddleEast"));
+        smallCountries.put("IL", new Pair<String>("Israel", "MiddleEast"));
+        smallCountries.put("AU", new Pair<String>("Australia", "Australia"));
+        smallCountries.put("NZ", new Pair<String>("NewZealand", "Australia"));
     }
 
     public static Map<String, String> countriesExcludingEU = new HashMap<>(20);
@@ -104,7 +119,7 @@ public class TeslaInventoryGrepper {
             return "hu";
         } else if (country.equalsIgnoreCase("HR")) { // Croatia
             return "hr";
-        } else if (country.equalsIgnoreCase("ES")) { // Spain
+        } else if (country.equalsIgnoreCase("ES") || country.equalsIgnoreCase("MX")) { // Spain, Mexico
             return "es";
         } else if (country.equalsIgnoreCase("GR")) { // GREEK
             return "el";
@@ -115,10 +130,22 @@ public class TeslaInventoryGrepper {
             return "da";
         } else if (country.equalsIgnoreCase("CZ")) { // Czech Republic
             return "cs";
+        } else if (country.equalsIgnoreCase("KR")) { // Korea
+            return "ko";
+        } else if (country.equalsIgnoreCase("JP")) { // Japan
+            return "ja";
+        } else if (country.equalsIgnoreCase("IL")) { // Israel
+            return "he";
         } else if (country.equalsIgnoreCase("CA") ||
             country.equalsIgnoreCase("IE") ||
             country.equalsIgnoreCase("GB") ||
-            country.equalsIgnoreCase("US")) { // Canada, Ireland, England
+            country.equalsIgnoreCase("US") ||
+            country.equalsIgnoreCase("HK") ||
+            country.equalsIgnoreCase("MO") ||
+            country.equalsIgnoreCase("SG") ||
+            country.equalsIgnoreCase("AE") ||
+            country.equalsIgnoreCase("AU") ||
+            country.equalsIgnoreCase("NZ")) { // Canada, Ireland, England
             return "en";
         } else if (country.equalsIgnoreCase("CN")) { // China
             return "zh";
@@ -298,24 +325,12 @@ public class TeslaInventoryGrepper {
     }
 
     /**
-     * Query inventory of an EU country. No zip needed.
+     * Query inventory of a country. No zip needed.
      * @param cars
      * @param model
      * @param condition
      * @param market
      */
-    public int queryOneEUCountry(List<TeslaCar> cars, String model, String condition, String market) {
-        return queryOneCountry(cars, model, condition, market);
-    }
-
-    /**
-     * Query inventory of a country.
-     * total matched found may be larger than count (50). So we need to issue another call until all cars are retrieved.
-     * @param cars
-     * @param model
-     * @param condition
-     * @param market
-=     */
     public int queryOneCountry(List<TeslaCar> cars, String model, String condition, String market) {
         return queryWithRetries(cars, model, condition, market, "", 0, 0, "", 0, null);
     }
@@ -436,31 +451,35 @@ public class TeslaInventoryGrepper {
     }
 
     /**
-     * Loop all EU countries.
+     * Loop all countries which can be queried with countryCode only.
      * Query all models and all conditions in each country.
      */
-    public void grepEUCountries(String XEToken, String writeURL) {
+    public void grepSmallCountries(String XEToken, String writeURL) {
         CurrencyConvector convector = new CurrencyConvector(XEToken);
 
         long currSec = System.currentTimeMillis() / 1000;
-        for (Map.Entry<String, String> entry : EUCountries.entrySet()) {
+        for (Map.Entry<String, Pair<String>> entry : smallCountries.entrySet()) {
             String countryCode = entry.getKey();
-            String country = entry.getValue();
+            Pair<String> countryContinent = entry.getValue();
+            String country = countryContinent.first;
+            String continent = countryContinent.second;
             for(int i = 0; i < models.length; i++) {
                 String model = models[i];
                 for(int j = 0; j < conditions.length; j++) {
                     String condition = conditions[j];
                     List<TeslaCar> cars = new LinkedList<>();
 
-                    int total_number = queryOneEUCountry(cars, model, condition, countryCode);
+                    int total_number = queryOneCountry(cars, model, condition, countryCode);
 
                     for (TeslaCar car : cars) {
                         // convert local price to USD, and set it in the object.
                         try {
-                            long priceUSD = convector.toUSD(car.getPrice(), car.getCurrencyCode());
-                            car.setPriceUSD(priceUSD);
+                            if (!car.getCurrencyCode().equalsIgnoreCase("USD")) {
+                                long priceUSD = convector.toUSD(car.getPrice(), car.getCurrencyCode());
+                                car.setPriceUSD(priceUSD);
+                            }
 
-                            car.setContinent("EU");
+                            car.setContinent(continent);
                         } catch (Exception e) {
                             System.out.println("Fail to convert price to USD for car " + car);
                             e.printStackTrace();
@@ -468,11 +487,11 @@ public class TeslaInventoryGrepper {
                     }
 
                     System.out.println(String.format("Country:%s(%s), model:%s, condition:%s, total_matches_found:%d", country, countryCode, model, condition, cars.size()));
-                    writeTotalNumberToTT(writeURL, currSec, total_number, model, condition, "EU", country, countryCode, null);
+                    writeTotalNumberToTT(writeURL, currSec, total_number, model, condition, continent, country, countryCode, null);
 
                     writeMetricsToTT(cars, writeURL, currSec);
                     try {
-                        sleep(5000);
+                        sleep(1000);
                     } catch(InterruptedException ie) {
                         ie.printStackTrace();
                     }

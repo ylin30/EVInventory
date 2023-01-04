@@ -11,6 +11,7 @@ public class USACity extends City {
         this.region = region;
     }
 
+    // No space allowed in city name.
     public static Map<String, City> cityMap = new HashMap<>(60);
     static {
         cityMap.put("Seattle", new USACity("WA", "Seattle", "98101", -122.336407,47.6084921));
@@ -49,7 +50,7 @@ public class USACity extends City {
         cityMap.put("JeffersonCity", new USACity("MO", "JeffersonCity", "65101", -92.1646722, 38.528107));
         cityMap.put("Helena", new USACity("MT", "Helena", "59623", -112.0408432, 46.5899699));
         cityMap.put("Lincoln", new USACity("NE", "Lincoln", "68502", -96.7012424, 40.7895543));
-        cityMap.put("Las Vegas", new USACity("NV", "Las Vegas", "88901", -115.14, 36.18));
+        cityMap.put("LasVegas", new USACity("NV", "LasVegas", "88901", -115.14, 36.18));
         cityMap.put("Concord", new USACity("NH", "Concord", "03301", -71.5486562, 43.2086343));
         cityMap.put("Trenton", new USACity("NJ", "Trenton", "08608", -74.76735459999999, 40.2187428));
         cityMap.put("SantaFe", new USACity("NM", "SantaFe", "87501", -105.8407722, 35.7135437));

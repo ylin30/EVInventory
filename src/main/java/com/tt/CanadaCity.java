@@ -9,13 +9,14 @@ public class CanadaCity extends City {
 
     public static Map<String, City> cityMap = new HashMap<>(60);
 
+    // No spaces allowed in city name
     static {
         cityMap.put("Vancouver", new CanadaCity("BC", "Vancouver", "V5R 2H2", -123.116226, 49.246292));
         cityMap.put("Victoria", new CanadaCity("BC", "Victoria", "V8N 0A1", -123.329773, 48.407326));
         cityMap.put("Kelowna", new CanadaCity("BC", "Kelowna", "V1P 0A1", -119.477829, 49.882114));
         cityMap.put("Calgary", new CanadaCity("AB", "Calgary", "T3B 4X3", -114.066666, 51.049999));
         cityMap.put("Edmonton", new CanadaCity("AB", "Edmonton", "T6C 2K5", -113.323975, 53.631611));
-        cityMap.put("Quebec City", new CanadaCity("QC", "Quebec City", "G2M 1C6", -71.204, 46.813));
+        cityMap.put("QuebecCity", new CanadaCity("QC", "QuebecCity", "G2M 1C6", -71.204, 46.813));
         cityMap.put("Montreal", new CanadaCity("QC", "Montreal", "H1W 3V8", -73.561668, 45.508888));
         cityMap.put("Hamilton", new CanadaCity("ON", "Hamilton", "L8L 8C5", -79.843826, 43.255203));
         cityMap.put("Toronto", new CanadaCity("ON", "Toronto", "M3C 0C1", -79.347015, 43.651070));
@@ -27,7 +28,7 @@ public class CanadaCity extends City {
         cityMap.put("Winnipeg", new CanadaCity("MB", "Winnipeg", "R2M 0T7", -97.138451, 49.895077));
         cityMap.put("Churchill", new CanadaCity("MB", "Churchill", "R0B 0B6", -94.164963, 58.768410));
         cityMap.put("Moncton", new CanadaCity("NB", "Moncton", "E1A 0A3", -64.790497, 46.090946));
-        cityMap.put("St. John's", new CanadaCity("NL", "St. John's", "A1B 0G2", 47.560539, -52.712830));
+        cityMap.put("St.John's", new CanadaCity("NL", "St.John's", "A1B 0G2", 47.560539, -52.712830));
         cityMap.put("Halifax", new CanadaCity("NS", "Halifax", "B3H 1A1", 44.651070, -63.582687));
         cityMap.put("Regina", new CanadaCity("SK", "Regina", "S4M 0A1", -104.618896, 50.445210));
         cityMap.put("Saskatoon", new CanadaCity("SK", "Saskatoon", "S7H 0A9", 52.146973, -106.647034));
