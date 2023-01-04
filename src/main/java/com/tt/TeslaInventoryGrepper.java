@@ -62,6 +62,7 @@ public class TeslaInventoryGrepper {
     static {
         countriesExcludingEU.put("US", "USA");
         countriesExcludingEU.put("CN", "China");
+        countriesExcludingEU.put("CA", "Canada");
     }
 
     private Set<String> carVINs;
@@ -367,6 +368,7 @@ public class TeslaInventoryGrepper {
         return total_matches_found;
     }
 
+
     /**
      * Query inventory of an USA city. Zip, region(state), lng and lat must be speicified.
      * @param cars
@@ -374,9 +376,10 @@ public class TeslaInventoryGrepper {
      * @param condition
      * @param city
      */
-    private int queryOneUSACity(List<TeslaCar> cars, String model, String condition, USACity city) {
-        return queryWithRetries(cars, model, condition, "US", city.zip, city.lng, city.lat, city.region, USACity.RANGE, null);
+    private int queryCity(TeslaInventoryGrepper grepper, List<TeslaCar> cars, String market, String model, String condition, City city) {
+        return queryWithRetries(cars, model, condition, market, city.zip, city.lng, city.lat, city.province /* used as region */, City.RANGE, null /* must be null */);
     }
+
 
     /**
      * Query inventory of a China city. Zip, region(state), lng and lat must be speicified.
@@ -479,38 +482,37 @@ public class TeslaInventoryGrepper {
     }
 
     /**
-     * Loop all EU countries.
-     * Query all models and all conditions in each country.
+     * Loop all USA cities.
+     * Query all models and all conditions in each city. Removed redundant cars (by VINs) if necessary.
      */
-    public void grepUSACities(String writeURL) {
+    public void grepCarsInCities(String writeURL, String continent, String countryCode, String country, Map<String, City> cityNameToObjMap) {
         // Some cities might be too closed and their results have overlapped.
         // Don't count repeated inventory.
         Set<String> knownVINs = new HashSet<>();
 
         long currSec = System.currentTimeMillis() / 1000;
-        String market = "US";
-        for (Map.Entry<String, USACity> entry : USACity.cityMap.entrySet()) {
+        for (Map.Entry<String, City> entry : cityNameToObjMap.entrySet()) {
             String city = entry.getKey();
-            USACity cityObj = entry.getValue();
+            City cityObj = entry.getValue();
             for(int i = 0; i < models.length; i++) {
                 String model = models[i];
                 for(int j = 0; j < conditions.length; j++) {
                     String condition = conditions[j];
                     List<TeslaCar> cars = new LinkedList<>();
 
-                    int totalNumber = queryOneUSACity(cars, model, condition, cityObj);
-                    System.out.println(String.format("%s(%s), model:%s, condition:%s, total_matches_found:%d, cars:%d", entry.getValue(), market, model, condition, totalNumber, cars.size()));
+                    int totalNumber = queryCity(this, cars, countryCode, model, condition, cityObj);
+                    System.out.println(String.format("%s(%s), model:%s, condition:%s, total_matches_found:%d, cars:%d", entry.getValue(), countryCode, model, condition, totalNumber, cars.size()));
 
                     int numKnowns = removeRedundantCars(cars, knownVINs);
 
                     System.out.println(String.format("After removed redundant, numRemoved:%d, cars:%d", numKnowns, cars.size()));
 
                     // No matter if zero inventory or not, write total car number to TT.
-                    writeTotalNumberToTT(writeURL, currSec, totalNumber - numKnowns, model, condition, "NA", "USA", market, city);
+                    writeTotalNumberToTT(writeURL, currSec, totalNumber - numKnowns, model, condition, continent, country, countryCode, city);
 
                     if (cars.size() > 0) {
                         for (TeslaCar car : cars) {
-                            car.setContinent("NA");
+                            car.setContinent(continent);
                         }
                         writeMetricsToTT(cars, writeURL, currSec);
                     }
@@ -715,7 +717,7 @@ public class TeslaInventoryGrepper {
 
         if (args.length < 3 || args.length > 4) {
             System.err.println("Parameters length must be 3 or 4.");
-            System.err.println("Usgae: java TeslaInventoryGrepper <model(m3, my, mx, ms)> <condition(new, used)> <market(fr, cn...)> [Province(Shanghai)]");
+            System.err.println("Usgae: java TeslaInventoryGrepper <model(m3, my, mx, ms)> < (new, used)> <market(fr, cn...)> [Province(Shanghai)]");
             return;
         }
         String model = args[0].toLowerCase();

@@ -1,27 +1,17 @@
 package com.tt;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
-public class USACity {
-    // Used in inventory query to specify range of query.
-    public static int RANGE = 50;
-
-    String region;
-    String city;
-    double lng;
-    double lat;
-    String zip;
-
+public class USACity extends City {
+    private String region;
     public USACity(String region, String city, String zip, double lng, double lat) {
+        super(region, city, zip, lng, lat);
         this.region = region;
-        this.city = city;
-        this.lng = lng;
-        this.lat = lat;
-        this.zip = zip;
     }
 
-    public static Map<String, USACity> cityMap = new HashMap<>(60);
+    public static Map<String, City> cityMap = new HashMap<>(60);
     static {
         cityMap.put("Seattle", new USACity("WA", "Seattle", "98101", -122.336407,47.6084921));
         cityMap.put("Montgomery", new USACity("AL", "Montgomery", "36104", -86.3224638,32.3989318));
@@ -90,6 +80,11 @@ public class USACity {
         cityMap.put("Charleston", new USACity("WV", "Charleston", "25301", -81.63364740000002, 38.3517112));
         cityMap.put("Madison", new USACity("WI", "Madison", "53703", -89.3724769,43.0833196));
         cityMap.put("Cheyenne", new USACity("WY", "Cheyenne", "82001", -104.8201078,41.1400096));
+    }
+
+    @Override
+    public int queryWithRetries(TeslaInventoryGrepper grepper, List<TeslaCar> cars, String model, String condition, String market) {
+        return grepper.queryWithRetries(cars, model, condition, market, this.zip, this.lng, this.lat, this.region, City.RANGE, null /* must be null for USA city */);
     }
 
     @Override
