@@ -15,8 +15,8 @@ public class Main {
         TeslaInventoryGrepper grepper = new TeslaInventoryGrepper();
         grepper.grepEUCountries(XEToken, writeURL);
 
-        grepper.grepCarsInCities(writeURL, "NA", "US", "USA", USACity.cityMap);
-        grepper.grepCarsInCities(writeURL, "NA", "CA", "Canada", CanadaCity.cityMap);
+        grepper.grepCarsInCities(XEToken, writeURL, "NA", "US", "USA", USACity.cityMap);
+        grepper.grepCarsInCities(XEToken, writeURL, "NA", "CA", "Canada", CanadaCity.cityMap);
 
         grepper.setUrl(TeslaInventoryGrepper.urlCn);
         grepper.grepChina(XEToken, writeURL);

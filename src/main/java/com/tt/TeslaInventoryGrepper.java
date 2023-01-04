@@ -485,7 +485,9 @@ public class TeslaInventoryGrepper {
      * Loop all USA cities.
      * Query all models and all conditions in each city. Removed redundant cars (by VINs) if necessary.
      */
-    public void grepCarsInCities(String writeURL, String continent, String countryCode, String country, Map<String, City> cityNameToObjMap) {
+    public void grepCarsInCities(String XEToken, String writeURL, String continent, String countryCode, String country, Map<String, City> cityNameToObjMap) {
+        CurrencyConvector convector = new CurrencyConvector(XEToken);
+
         // Some cities might be too closed and their results have overlapped.
         // Don't count repeated inventory.
         Set<String> knownVINs = new HashSet<>();
@@ -512,7 +514,18 @@ public class TeslaInventoryGrepper {
 
                     if (cars.size() > 0) {
                         for (TeslaCar car : cars) {
-                            car.setContinent(continent);
+                            // convert local price to USD, and set it in the object.
+                            try {
+                                if (!car.getCurrencyCode().equalsIgnoreCase("USD")) {
+
+                                    long priceUSD = convector.toUSD(car.getPrice(), car.getCurrencyCode());
+                                    car.setPriceUSD(priceUSD);
+                                }
+                                car.setContinent(continent);
+                            } catch (Exception e) {
+                                System.out.println("Fail to convert price to USD for car " + car);
+                                e.printStackTrace();
+                            }
                         }
                         writeMetricsToTT(cars, writeURL, currSec);
                     }
