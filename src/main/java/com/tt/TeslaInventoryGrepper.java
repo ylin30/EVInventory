@@ -454,8 +454,8 @@ public class TeslaInventoryGrepper {
      * Loop all countries which can be queried with countryCode only.
      * Query all models and all conditions in each country.
      */
-    public void grepSmallCountries(String XEToken, String writeURL) {
-        CurrencyConvector convector = new CurrencyConvector(XEToken);
+    public void grepSmallCountries(String writeURL) {
+        CurrencyConvectorNoToken convector = new CurrencyConvectorNoToken();
 
         long currSec = System.currentTimeMillis() / 1000;
         for (Map.Entry<String, Pair<String>> entry : smallCountries.entrySet()) {
@@ -487,7 +487,7 @@ public class TeslaInventoryGrepper {
                     }
 
                     System.out.println(String.format("Country:%s(%s), model:%s, condition:%s, total_matches_found:%d", country, countryCode, model, condition, cars.size()));
-                    writeTotalNumberToTT(writeURL, currSec, total_number, model, condition, continent, country, countryCode, null);
+                    writeTotalNumberToTT(writeURL, currSec, total_number, model, condition, continent, country, countryCode, null, null);
 
                     writeMetricsToTT(cars, writeURL, currSec);
                     try {
@@ -504,8 +504,8 @@ public class TeslaInventoryGrepper {
      * Loop all USA cities.
      * Query all models and all conditions in each city. Removed redundant cars (by VINs) if necessary.
      */
-    public void grepCarsInCities(String XEToken, String writeURL, String continent, String countryCode, String country, Map<String, City> cityNameToObjMap) {
-        CurrencyConvector convector = new CurrencyConvector(XEToken);
+    public void grepCarsInCities(String writeURL, String continent, String countryCode, String country, Map<String, City> cityNameToObjMap) {
+        CurrencyConvectorNoToken convector = new CurrencyConvectorNoToken();
 
         // Some cities might be too closed and their results have overlapped.
         // Don't count repeated inventory.
@@ -529,7 +529,7 @@ public class TeslaInventoryGrepper {
                     System.out.println(String.format("After removed redundant, numRemoved:%d, cars:%d", numKnowns, cars.size()));
 
                     // No matter if zero inventory or not, write total car number to TT.
-                    writeTotalNumberToTT(writeURL, currSec, totalNumber - numKnowns, model, condition, continent, country, countryCode, city);
+                    writeTotalNumberToTT(writeURL, currSec, totalNumber - numKnowns, model, condition, continent, country, countryCode, cityObj.province, city);
 
                     if (cars.size() > 0) {
                         for (TeslaCar car : cars) {
@@ -562,8 +562,8 @@ public class TeslaInventoryGrepper {
      * Loop all Chinese cities.
      * Query all models and all conditions in each Chinese city.
      */
-    public void grepChina(String XEToken, String writeURL) {
-        CurrencyConvector convector = new CurrencyConvector(XEToken);
+    public void grepChina(String writeURL) {
+        CurrencyConvectorNoToken convector = new CurrencyConvectorNoToken();
 
         // Some cities might be too closed and their results have overlapped.
         // Don't count repeated inventory.
@@ -589,7 +589,7 @@ public class TeslaInventoryGrepper {
                     String city = entry.getKey();
                     int num = entry.getValue();
                     // No matter if zero inventory or not, write total car number to TT.
-                    writeTotalNumberToTT(writeURL, currSec, num, model, condition, "ASIA", "China", market, city);
+                    writeTotalNumberToTT(writeURL, currSec, num, model, condition, "ASIA", "China", market, null, city);
                 }
 
                 if (cars.size() > 0) {
@@ -689,7 +689,7 @@ public class TeslaInventoryGrepper {
         }
     }
 
-    private void writeTotalNumberToTT(String writeURL, long currMs, int total_number, String model, String condition, String continent, String country, String countryCode, String city) {
+    private void writeTotalNumberToTT(String writeURL, long currMs, int total_number, String model, String condition, String continent, String country, String countryCode, String stateCode, String city) {
         StringBuffer putReqSB = new StringBuffer();
         putReqSB.append("put " + TOTAL_NUMBER_METRIC);
         putReqSB.append(" " + currMs);
@@ -701,6 +701,9 @@ public class TeslaInventoryGrepper {
         putReqSB.append(" continent=" + continent);
         if (city != null && !city.isEmpty()) {
             putReqSB.append(" city=" + city);
+        }
+        if (stateCode != null && !stateCode.isEmpty()) {
+            putReqSB.append(" state=" + stateCode);
         }
         putReqSB.append(System.lineSeparator());
 
