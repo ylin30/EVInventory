@@ -696,11 +696,11 @@ public class TeslaInventoryGrepper {
         putReqSB.append(" " + total_number);
         putReqSB.append(" model=" + model);
         putReqSB.append(" condition=" + condition);
-        putReqSB.append(" country=" + country);
+        if (country != null && !country.isEmpty()) putReqSB.append(" country=" + country.replace(" ", "_"));
         putReqSB.append(" countryCode=" + countryCode);
         putReqSB.append(" continent=" + continent);
         if (city != null && !city.isEmpty()) {
-            putReqSB.append(" city=" + city);
+            putReqSB.append(" city=" + city.replace(" ", "_"));
         }
         if (stateCode != null && !stateCode.isEmpty()) {
             putReqSB.append(" state=" + stateCode);

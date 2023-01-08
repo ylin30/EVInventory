@@ -388,8 +388,7 @@ public class TeslaCar {
             ", lat=" + lat + '\'' +
             ", currencyCode='" + currencyCode + '\'' +
             ", interior='" + interior + '\'' +
-            ", odometer=" + odometer +
-            ", odometerType='" + odometerType + '\'' +
+            ", odometer=" + odometer + odometerType  + '\'' +
             ", paint='" + paint + '\'' +
             ", trim='" + trim + '\'' +
             ", wheels='" + wheels + '\'' +
@@ -403,19 +402,18 @@ public class TeslaCar {
     public String tagsString() {
         StringBuffer sb = new StringBuffer();
         sb.append(" continent=" + continent);
-        sb.append(" country=" + country);
+        if (country != null) sb.append(" country=" + country.replace(" ", "_"));
         sb.append(" countryCode=" + countryCode);
         sb.append(" model=" + model);
-        sb.append(" autopilot=" + autopilot);
-        sb.append(" city=" + city);
+        if (autopilot != null) sb.append(" autopilot=" + autopilot.replace(" ", "_"));
+        if (city != null) sb.append(" city=" + city.replace(" ", "_"));
         sb.append(" lng=" + lng);
         sb.append(" lat=" + lat);
-        sb.append(" interior=" + interior);
-        sb.append(" odometer=" + odometer);
-        sb.append(" odometerType=" + odometerType);
-        sb.append(" paint=" + paint);
-        sb.append(" trim=" + trim);
-        sb.append(" wheels=" + wheels);
+        if (interior != null) sb.append(" interior=" + interior.replace(" ", "_"));
+        sb.append(" odometer=" + odometer+odometerType);
+        if (paint != null) sb.append(" paint=" + paint.replace(" ", "_"));
+        if (trim != null) sb.append(" trim=" + trim.replace(" ", "_"));
+        if (wheels != null) sb.append(" wheels=" + wheels.replace(" ", "_"));
         sb.append(" year=" + year);
         sb.append(" isDemo=" + isDemo);
         sb.append(" condition=" + condition);
